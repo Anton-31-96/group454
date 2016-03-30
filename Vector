@@ -13,14 +13,17 @@ class Vector:
         return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
     
     def __mul__(self, other):
-        return (self.x * other.x + self.y * other.y + self.z * other.z)
+        if isinstance(other, Vector) == True:
+            return (self.x * other.x + self.y * other.y + self.z * other.z)
+        else:
+            return Vector(self.x * other, self.y * other, self.z * other)
+
+    def __rmul__(self, other):
+        if isinstance(other, Vector) == True:
+            return (self.x * other.x + self.y * other.y + self.z * other.z)
+        else:
+            return Vector(self.x * other, self.y * other, self.z * other)
     
     def __abs__(self):
         return (math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2))
-
-    def __mul__(self, int):
-        return Vector(self.x * int, self.y * int, self.z * int)
-    
-    def __rmul__(self, int):
-        return Vector(int * self.x, int * self.y, int * self.z)
     
