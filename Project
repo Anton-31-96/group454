@@ -8,28 +8,34 @@
 import pygame
 
 class Player:
-    def __init__(self, x = 100, y = 100, vy = 0, a = 500, r = 20):
+    def __init__(self, number,x = 100, y = 100, vy = 0, a = 500, r = 20, color = (0,0,0)):
         """Constructor of Player class"""
         """self.a - acceleration"""
         """self.r - radius"""
-        self.x, self.y, self.vy, self.a, self.r = \
-                x, y, vy, a, r
-        self.color = (0,0,0)
+        self.number, self.x, self.y, self.vy, self.a, self.r, self.color = \
+                number, x, y, vy, a, r, color
 
     def update(self, game):
         """Update Player state"""
-        if game.pressed[pygame.K_LEFT]:
-            self.x -= 10
-            #self.vx -= game.delta * self.a
-        if game.pressed[pygame.K_RIGHT]:
-            self.x += 10
-            #self.vx += game.delta * self.a
-        if game.pressed[pygame.K_UP]:
-            if self.y == game.height - self.r:
-                self.vy -= 1000
-            #game.delta * self.a
+        if self.number == 1:
+            if game.pressed[pygame.K_LEFT]:
+                self.x -= 10
+            if game.pressed[pygame.K_RIGHT]:
+                self.x += 10
+            if game.pressed[pygame.K_UP]:
+                if self.y == game.height - self.r:
+                    self.vy -= 1000
 
-        self.vy -= game.delta * self.vy - game.delta * 1500 
+        elif self.number == 2:
+            if game.pressed[pygame.K_a]:
+                self.x -= 10
+            if game.pressed[pygame.K_d]:
+                self.x += 10
+            if game.pressed[pygame.K_w]:
+                if self.y == game.height - self.r:
+                    self.vy -= 1000
+
+        self.vy += game.delta * 1500 
         self.y += self.vy * game.delta
 
         """Do not let Player get out of the Game window"""
@@ -50,7 +56,7 @@ class Player:
 class Game:
     def tick(self):
         """Return time in seconds since previous call
-        and limit speed of the game to 50 fps"""
+        and limit speed of the game to 60 fps"""
         self.delta = self.clock.tick(60) / 1000.0
 
     def __init__(self):
@@ -66,7 +72,8 @@ class Game:
         self.clock = pygame.time.Clock()
         # set default tool
         self.tool = 'run'
-        self.player = Player()
+        self.player2 = Player(2, x = 600, color=(255,0,0))
+        self.player = Player(1)
         self.ar = pygame.PixelArray(self.screen)
 
     def event_handler(self, event):
@@ -84,11 +91,13 @@ class Game:
         self.tick()
         self.pressed = pygame.key.get_pressed()
         self.player.update(self)
+        self.player2.update(self)
 
     def render(self):
         """Render the scene"""
         self.screen.fill((255, 255, 255))
         self.player.render(self)
+        self.player2.render(self)
         self.ar[int(self.player.x/10.0),int(self.player.y/10.0)] = (200,200,200)
         pygame.display.flip()
 
