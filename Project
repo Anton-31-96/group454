@@ -6,6 +6,7 @@
 #В идеале наличие искусственного интеллекта
 
 import pygame
+from pygame import*
 
 class Player:
     def __init__(self, number,x = 100, y = 100, vy = 0, a = 500, r = 20, color = (0,0,0)):
@@ -14,6 +15,7 @@ class Player:
         """self.r - radius"""
         self.number, self.x, self.y, self.vy, self.a, self.r, self.color = \
                 number, x, y, vy, a, r, color
+        self.im = pygame.image.load("man.bmp").convert()
 
     def update(self, game):
         """Update Player state"""
@@ -23,17 +25,17 @@ class Player:
             if game.pressed[pygame.K_RIGHT]:
                 self.x += 10
             if game.pressed[pygame.K_UP]:
-                if self.y == game.height - self.r:
+                if self.y == game.height - 40:
                     self.vy -= 1000
-
+                    
         elif self.number == 2:
             if game.pressed[pygame.K_a]:
                 self.x -= 10
             if game.pressed[pygame.K_d]:
                 self.x += 10
             if game.pressed[pygame.K_w]:
-                if self.y == game.height - self.r:
-                    self.vy -= 1000
+                if self.y == game.height - 40:
+                    self.vy -= 500
 
         self.vy += game.delta * 1500 
         self.y += self.vy * game.delta
@@ -45,13 +47,14 @@ class Player:
             self.y = self.r
         if self.x > game.width - self.r:
             self.x = game.width - self.r
-        if self.y > game.height - self.r:
-            self.y = game.height - self.r
+        if self.y >= game.height - 40:
+            self.y = game.height - 40
 
     def render(self, game):
         """Draw Player on the Game window"""
-        pygame.draw.circle(game.screen, self.color,
-                (int(self.x), int(self.y)), self.r)
+        #pygame.draw.circle(game.screen, self.color,
+                #(int(self.x), int(self.y)), self.r)
+        game.screen.blit(self.im, (int(self.x),int(self.y)))
 
 class Game:
     def tick(self):
@@ -62,8 +65,8 @@ class Game:
     def __init__(self):
         """Constructor of the Game"""
         self._running = True
-        self.size = self.width, self.height = 840, 400
-        # create main display - 840x400 window
+        self.size = self.width, self.height = 1040, 400
+        # create main display - 1040x400 window
         # try to use hardware acceleration
         self.screen = pygame.display.set_mode(self.size, pygame.HWSURFACE)
         # set window caption
@@ -74,7 +77,8 @@ class Game:
         self.tool = 'run'
         self.player2 = Player(2, x = 600, color=(255,0,0))
         self.player = Player(1)
-        self.ar = pygame.PixelArray(self.screen)
+        #self.platform = Ground(500, 300)
+        
 
     def event_handler(self, event):
         """Handling one pygame event"""
@@ -98,16 +102,12 @@ class Game:
         self.screen.fill((255, 255, 255))
         self.player.render(self)
         self.player2.render(self)
-        self.ar[int(self.player.x/10.0),int(self.player.y/10.0)] = (200,200,200)
+        #self.platform.render(self)
         pygame.display.flip()
 
     def exit(self):
         """Exit the game"""
         self._running = False
-
-    def cleanup(self):
-        """Cleanup the Game"""
-        pygame.quit()
 
     def execute(self):
         """Execution loop of the game"""
@@ -117,7 +117,7 @@ class Game:
                 self.event_handler(event)
             self.move()
             self.render()
-        self.cleanup()
+        pygame.quit()
 
 if __name__ == "__main__":
     game = Game()
