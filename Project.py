@@ -7,6 +7,8 @@
 
 import pygame
 from pygame import*
+import menu
+import pause
 
 class Platform(sprite.Sprite):
     def __init__(self, x, y):
@@ -157,7 +159,8 @@ class Game:
         elif event.type == pygame.KEYDOWN:
             # keyboard event on press ESC
             if event.key == pygame.K_ESCAPE:
-                self.exit()
+                pause1 = pause.Menu()
+                pause1.execute()
 
     def move(self):
         """Here game objects update their positions"""
