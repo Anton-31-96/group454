@@ -28,7 +28,8 @@ class Player(sprite.Sprite):
         self.number, self.x, self.y, self.vy, self.vx = \
                 number, x, y, vy, vx
         self.image1 = pygame.image.load("./images/player/man_r.gif").convert()
-        self.image2 = pygame.image.load("./images/player/hitt2.gif").convert()
+        self.image2 = pygame.image.load("./images/player/hit_r.gif").convert()
+        self.image3 = pygame.image.load("./images/player/man_r_j.gif").convert()
         self.On_ground = False
         self.width, self.height = 100, 100
 
@@ -55,8 +56,6 @@ class Player(sprite.Sprite):
 
         self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
         self.vx = 0
-        #self.image = pygame.image.load("man_r.gif").convert()
-        self.image = self.image1
 
         """Deferent keys for first and secont player"""
         if self.number == 1:
@@ -68,8 +67,6 @@ class Player(sprite.Sprite):
                 if self.On_ground == True:
                     self.vy -= 800
                     self.On_ground = False
-            if game.pressed[K_RSHIFT]:
-                self.image = self.image2
                     
         elif self.number == 2:
             if game.pressed[K_a]:
@@ -80,8 +77,6 @@ class Player(sprite.Sprite):
                 if self.On_ground == True:
                     self.vy -= 800
                     self.On_ground = False
-            if game.pressed[K_SPACE]:
-                self.image = self.image2
 
         """Player's move"""
 
@@ -104,12 +99,21 @@ class Player(sprite.Sprite):
         if self.y >= game.height - self.height:
             self.y = game.height - self.height
             self.On_ground = True
-            #self.vy = 0
+            
         if self.On_ground == True:
             self.vy = 0
 
     def render(self, game):
         """Draw Player on the Game window"""
+        self.image = self.image3
+        if self.On_ground == True:
+            self.image = self.image1
+        if self.number == 1 and\
+           game.pressed[K_RSHIFT]:
+            self.image = self.image2
+        if self.number == 2 and \
+             game.pressed[K_SPACE]:
+                self.image = self.image2
         game.screen.blit(self.image, (int(self.x),int(self.y)))
         #game.entities.draw(game.screen)
 
