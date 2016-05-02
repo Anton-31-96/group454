@@ -27,30 +27,26 @@ class Player(sprite.Sprite):
         sprite.Sprite.__init__(self)
         self.number, self.x, self.y, self.vy, self.vx = \
                 number, x, y, vy, vx
-        #self.image = pygame.image.load("man1.gif").convert()
+        self.image1 = pygame.image.load("./images/player/man_r.gif").convert()
+        self.image2 = pygame.image.load("./images/player/hitt2.gif").convert()
         self.On_ground = False
         self.width, self.height = 100, 100
 
+    """Обработка столкновений с платформой"""
     def collide(self, game, vx, vy):
- 
         for p in game.platforms:            
             if sprite.collide_rect(self, p):
-                if vx > 0:
-                    vx = 0
-##                    if self.y > p.y - self.height:
-##                        self.x = p.x - self.width
-                if vx < 0:
-                    vx = 0
-##                    if self.y > p.y - self.height:
-##                        self.x = p.x + p.width
-                if vy > 0:
-                    #if self.y < p.y - self.height:
-                    self.y = p.y - self.height
+                """Спуск с платформы"""
+                if self.number == 1 and game.pressed[K_DOWN]\
+                   or self.number == 2 and game.pressed[K_s]:
+                    #and (self.y < game.height - self.height):
+                    self.On_ground = False
+                    """Прыжок на платформу"""
+                elif vy > 0 and (self.y < p.y - self.height + 30):
+                    self.y = p.y - self.height + 1
                     self.On_ground = True
                     vy = 0
-                if vy < 0:
-                    self.vy = 0
-                    self.y = p.y + p.height
+                    
             else: self.On_ground = False
 
 
@@ -59,32 +55,33 @@ class Player(sprite.Sprite):
 
         self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
         self.vx = 0
-        self.image = pygame.image.load("man_r.gif").convert()
+        #self.image = pygame.image.load("man_r.gif").convert()
+        self.image = self.image1
 
         """Deferent keys for first and secont player"""
         if self.number == 1:
-            if game.pressed[pygame.K_LEFT]:
+            if game.pressed[K_LEFT]:
                 self.vx -= 10
-            if game.pressed[pygame.K_RIGHT]:
+            if game.pressed[K_RIGHT]:
                 self.vx += 10
-            if game.pressed[pygame.K_UP]:
+            if game.pressed[K_UP]:
                 if self.On_ground == True:
                     self.vy -= 800
                     self.On_ground = False
-            if game.pressed[pygame.K_DELETE]:
-                self.image = pygame.image.load("hitt2.gif").convert()
+            if game.pressed[K_RSHIFT]:
+                self.image = self.image2
                     
         elif self.number == 2:
-            if game.pressed[pygame.K_a]:
+            if game.pressed[K_a]:
                 self.vx -= 10
-            if game.pressed[pygame.K_d]:
+            if game.pressed[K_d]:
                 self.vx += 10
-            if game.pressed[pygame.K_w]:
+            if game.pressed[K_w]:
                 if self.On_ground == True:
                     self.vy -= 800
                     self.On_ground = False
-            if game.pressed[pygame.K_SPACE]:
-                self.image = pygame.image.load("hitt2.gif").convert()
+            if game.pressed[K_SPACE]:
+                self.image = self.image2
 
         """Player's move"""
 
@@ -127,7 +124,7 @@ class Game:
     def __init__(self):
         """Constructor of the Game"""
         self._running = True
-        self.size = self.width, self.height = 1040, 400
+        self.size = self.width, self.height = 1040, 500
         # create main display - 1040x400 window
         # try to use hardware acceleration
         self.screen = pygame.display.set_mode(self.size, pygame.HWSURFACE)
@@ -189,4 +186,6 @@ class Game:
 
 if __name__ == "__main__":
     game = Game()
+##    menu = menu.Menu()
+##    menu.execute()
     game.execute()
