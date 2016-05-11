@@ -30,10 +30,12 @@ class Player(sprite.Sprite):
         sprite.Sprite.__init__(self)
         self.number, self.x, self.y, self.vy, self.vx = \
                 number, x, y, vy, vx
+        self.HP = 400
         self.image1 = pygame.image.load("./images/player/man_r.gif").convert()
         self.image2 = pygame.image.load("./images/player/hit_r.gif").convert()
         self.image3 = pygame.image.load("./images/player/man_r_j.gif").convert()
         self.On_ground = False
+        self.hurt = False
         self.width, self.height = 100, 100
         self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
 
@@ -54,19 +56,28 @@ class Player(sprite.Sprite):
                     
             else: self.On_ground = False
 
+        for p in game.players:
+            if sprite.collide_rect(self, p) and self != p:
+                if p.image == p.image2 and self.hurt == False:
+                    self.hurt = True
+                    if self.HP >= 20: self.HP -= 20
+                    else: self.HP = 0
+                elif p.image != p.image2:
+                    self.hurt = False
+
     def update(self, game):
         """ Update Player state """
         self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
         self.vx = 0
 
-        """ Deferent keys for first and secont player """
+        """ Deferent keys for first and second player """
         if self.number == 1:
             if game.pressed[K_LEFT]:
                 self.vx -= 10
             if game.pressed[K_RIGHT]:
                 self.vx += 10
             if game.pressed[K_UP]:
-                if self.On_ground == True:
+                if self.On_ground:
                     self.vy -= 800
                     self.On_ground = False
                     
@@ -76,7 +87,7 @@ class Player(sprite.Sprite):
             if game.pressed[K_d]:
                 self.vx += 10
             if game.pressed[K_w]:
-                if self.On_ground == True:
+                if self.On_ground:
                     self.vy -= 800
                     self.On_ground = False
 
@@ -105,6 +116,15 @@ class Player(sprite.Sprite):
         if self.On_ground == True:
             self.vy = 0
 
+    def show_HP(self, game):
+        """ define and draw HP on the Game screen """
+        self.color_HP = (200, 10, 10)
+        if self.number == 1:
+            self.rect_HP = Rect(10,10, self.HP + 10, 20)
+        if self.number == 2:
+            self.rect_HP = Rect(game.width - self.HP - 10, 10, game.width - 10, 20)
+        draw.rect(game.screen, self.color_HP, self.rect_HP)
+        
     def render(self, game):
         """ Draw Player on the Game window """
         self.image = self.image3
@@ -117,6 +137,7 @@ class Player(sprite.Sprite):
              game.pressed[K_SPACE]:
                 self.image = self.image2
         game.screen.blit(self.image, (int(self.x),int(self.y)))
+        self.show_HP(game)
         #game.entities.draw(game.screen)
 
     def save_motion(self):
@@ -126,7 +147,6 @@ class Player(sprite.Sprite):
     def load_motion(self):
         """ Загрузка параметров положения игрока """
         self.y, self.vy = self.sy, self.svy
-
 
 
 class Menu:
