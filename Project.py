@@ -343,18 +343,12 @@ class Game:
                     self.tool = 'main'
 
     def define_winner(self):
-        self.font = pygame.font.Font(None, 25)
-        #self.image_win = Surface((1,1))
+        """ define winner when time is over """
         if self.T <= 0:
             if self.player.HP > self.player2.HP:
                 self.player2.HP = 0
-            else:
+            elif self.player.HP < self.player2.HP:
                 self.player.HP = 0
-        '''elif self.player.HP == 0:
-            self.image_win = self.font.render("second player wins", True, red)
-        elif self.player2.HP == 0:
-            self.image_win = self.font.render("first player wins", True, red)
-        game.screen.blit(self.image_win, (470, 50))'''
 
     def move(self):
         """ Here game objects update their positions """
