@@ -141,8 +141,8 @@ class Player(sprite.Sprite):
             self.show_HP(game)
         else:
             self.font = pygame.font.Font (None, 25)
-            self.image = self.font.render("second player wins", True, (120, 0, 0))
-            self.x, self.y = 490, 50
+            self.image = self.font.render("second player wins", True, red)
+            self.x, self.y = 470, 50
         game.screen.blit(self.image, (int(self.x),int(self.y)))
 
         #game.entities.draw(game.screen)
@@ -210,8 +210,8 @@ class Player2(Player):
             self.show_HP(game)
         else:
             self.font = pygame.font.Font(None, 25)
-            self.image = self.font.render("first player wins", True, (120, 0, 0))
-            self.x, self.y = 490, 50
+            self.image = self.font.render("first player wins", True, red)
+            self.x, self.y = 470, 50
         game.screen.blit(self.image, (int(self.x), int(self.y)))
 
 
@@ -294,6 +294,14 @@ class Game:
         and limit speed of the game to 60 fps """
         self.delta = self.clock.tick(60) / 1000.0
 
+    def timer(self, time):
+        """ writes time to the fight end on the Game window """
+        self.timer
+        self.font = pygame.font.Font(None, 40)
+        self.image = self.font.render(str(int(time)), True, (120, 0, 0))
+        self.T -= self.delta
+        game.screen.blit(self.image, (500, 10))
+
     def __init__(self):
         """ Constructor of the Game """
         self._running = True
@@ -307,6 +315,7 @@ class Game:
         # get object to help track time
         self.clock = pygame.time.Clock()
         self.tool = 'start'
+        self.T = 16
 
         self.menu = Menu(self)
         self.platform = Platform(x = 300, y = 350)
@@ -333,6 +342,20 @@ class Game:
                 elif self.tool == 'pause':
                     self.tool = 'main'
 
+    def define_winner(self):
+        self.font = pygame.font.Font(None, 25)
+        #self.image_win = Surface((1,1))
+        if self.T <= 0:
+            if self.player.HP > self.player2.HP:
+                self.player2.HP = 0
+            else:
+                self.player.HP = 0
+        '''elif self.player.HP == 0:
+            self.image_win = self.font.render("second player wins", True, red)
+        elif self.player2.HP == 0:
+            self.image_win = self.font.render("first player wins", True, red)
+        game.screen.blit(self.image_win, (470, 50))'''
+
     def move(self):
         """ Here game objects update their positions """
         self.pressed = pygame.key.get_pressed()
@@ -351,9 +374,12 @@ class Game:
         """ Render the scene """
         self.screen.fill((255, 255, 255))
         if self.tool == 'main':
+            if self.T >= 0:
+                self.timer(self.T)
+            self.platform.render(self)
             self.player.render(self)
             self.player2.render(self)
-            self.platform.render(self)
+            self.define_winner()
         else:
             self.screen.blit(self.menu.image, (1,1))
             if self.menu.image != self.menu.develop:
