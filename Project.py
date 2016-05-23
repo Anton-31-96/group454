@@ -7,11 +7,13 @@
 
 import pygame
 from pygame import*
+import random
 
 """ We will use these colours """
 red = (200,10,10)
 gray = (120,126,135)
 green = (10,200,10)
+black = (0,0,0)
 
 class Platform(sprite.Sprite):
     def __init__(self, x, y):
@@ -35,17 +37,19 @@ class Player(sprite.Sprite):
         sprite.Sprite.__init__(self)
         self.x, self.y, self.vy, self.vx = \
                 x, y, vy, vx
-        self.HP, self.power = 400, 20
+        self.HP, self.power, self.shoot_n = 400, 20, 10
         self.On_ground = False
         self.hurt = False
         self.hit = False
+        self.shoot = True
 
         """ Control keys """
         self.UP = K_UP
         self.DOWN = K_DOWN
         self.RIGHT = K_RIGHT
         self.LEFT = K_LEFT
-        self.HIT = K_RSHIFT
+        self.HIT = K_PERIOD
+        self.SHOOT = K_COMMA
 
         """ Load images """
         self.image_hands_down = pygame.image.load("./images/player/hands_down.gif").convert()
@@ -53,6 +57,7 @@ class Player(sprite.Sprite):
         self.image_hands_hit = pygame.image.load("./images/player/hands_hit.gif").convert()
         self.image0 = pygame.image.load("./images/player/man_r.gif").convert()
         self.image1 = pygame.image.load("./images/player/man_r_stand.gif").convert()
+        self.image_atom = pygame.image.load("./images/player/atom2.gif").convert()
         self.anim = 0
         self.width, self.height = 60, 100
         self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
@@ -72,6 +77,13 @@ class Player(sprite.Sprite):
                     vy = 0
             else:
                 self.On_ground = False
+
+    def collide_atom(self, game):
+        """ Collide with one of the atoms """
+        for p in game.atoms:
+            if self.rect.colliderect(p.rect):
+                self.HP -= p.power
+                game.atoms.remove(p)
 
     def collide_enemy(self, enemy):
         """" Обработка столкновений с другим игроком """
@@ -93,8 +105,6 @@ class Player(sprite.Sprite):
                 enemy.vy = - enemy.vy
                 enemy.y -= 12
                 self.hurt = True
-            #else:
-                #self.hurt = False
         else:
             self.hurt = False
 
@@ -110,7 +120,7 @@ class Player(sprite.Sprite):
             self.y = game.height - self.height
             self.On_ground = True
 
-    def control(self):
+    def control(self, enemy):
         """ player's moving when key press """
         if game.pressed[self.LEFT]:
             self.vx -= 10
@@ -122,6 +132,16 @@ class Player(sprite.Sprite):
                 self.On_ground = False
         if game.pressed[self.HIT]:
             self.hit = True
+        if game.pressed[self.SHOOT]:
+            if self.shoot and self.shoot_n > 0:
+                self.shoot_n -= 1
+                if self.x > enemy.x:
+                    game.atoms.append(Atom(self.x - 20, self.rect.centery, -250))
+                else:
+                    game.atoms.append(Atom(self.x + self.width + 20, self.rect.centery, 250))
+            self.shoot = False
+        if not game.pressed[self.SHOOT]:
+            self.shoot = True
 
     def update(self, game):
         """ Update Player state """
@@ -130,10 +150,11 @@ class Player(sprite.Sprite):
         self.rect = self.image.get_rect(topleft = (self.x, self.y))
         self.vx = 0
         self.collide_enemy(game.player2)
-        self.control()
+        self.collide_atom(game)
+        self.control(game.player2)
 
         """ Player's move """
-        self.x +=self.vx
+        self.x += self.vx
         self.collide_platform(game, self.vx, 0)
         if not self.On_ground:
             self.vy += game.delta * 1500 
@@ -150,6 +171,14 @@ class Player(sprite.Sprite):
         self.color_HP = red
         self.rect_HP = Rect(10, 10, self.HP + 10, 20)
         draw.rect(game.screen, self.color_HP, self.rect_HP)
+
+    def show_atoms_n(self):
+        """ Show the number of available atoms """
+        rect_atoms = Rect(10, 20, 20, 30).center
+        self.font = pygame.font.Font(None, 35)
+        self.at = self.font.render(str(self.shoot_n), True, black)
+        game.screen.blit(self.image_atom, rect_atoms)
+        game.screen.blit(self.at,(55, 40))
 
     def animation(self):
         if self.anim > 0.5:
@@ -185,6 +214,7 @@ class Player(sprite.Sprite):
             if self.hurt:
                 self.image = transform.rotate(self.image, 10)
             self.show_HP(game)
+            self.show_atoms_n()
             self.face2face(game.player2)
             game.screen.blit(self.image_hands, (int(self.h_x), int(self.h_y)))
         else:
@@ -203,17 +233,19 @@ class Player2(Player):
         sprite.Sprite.__init__(self)
         self.x, self.y, self.vy, self.vx = \
              x, y, vy, vx
-        self.HP, self.power = 400, 20
+        self.HP, self.power, self.shoot_n = 400, 20, 10
         self.On_ground = False
         self.hurt = False
         self.hit = False
+        self.shoot = True
 
         """ Control keys """
         self.UP = K_w
         self.DOWN = K_s
         self.RIGHT = K_d
         self.LEFT = K_a
-        self.HIT = K_SPACE
+        self.HIT = K_g
+        self.SHOOT = K_h
 
         """ Load images """
         self.image_hands_down = pygame.image.load("./images/player/hands_down.gif").convert()
@@ -221,21 +253,22 @@ class Player2(Player):
         self.image_hands_hit = pygame.image.load("./images/player/hands_hit.gif").convert()
         self.image0 = pygame.image.load("./images/player/man_r2.gif").convert()
         self.image1 = pygame.image.load("./images/player/man_r2_stand.gif").convert()
+        self.image_atom = pygame.image.load("./images/player/atom2.gif").convert()
         self.anim = 0
         self.width, self.height = 60, 100
         self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
 
     def update(self, game):
         """ Update Player state """
-        #self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
         self.hit = False
         self.rect = self.image.get_rect(topleft = (self.x, self.y))
         self.vx = 0
         self.collide_enemy(game.player)
-        self.control()
+        self.collide_atom(game)
+        self.control(game.player)
 
         """ Player's move """
-        self.x +=self.vx
+        self.x += self.vx
         self.collide_platform(game, self.vx, 0)
         if not self.On_ground:
             self.vy += game.delta * 1500
@@ -252,6 +285,13 @@ class Player2(Player):
         self.color_HP = red
         self.rect_HP = Rect((game.width - self.HP - 10), 10, game.width - 10, 20)
         draw.rect(game.screen, self.color_HP, self.rect_HP)
+
+    def show_atoms_n(self):
+        """ Show the number of available atoms """
+        self.font = pygame.font.Font(None, 35)
+        self.at = self.font.render(str(self.shoot_n), True, black)
+        game.screen.blit(self.image_atom, (game.width-50, 35))
+        game.screen.blit(self.at,(game.width-80, 40))
 
     def render(self, game):
         """ Draw Player on the Game window """
@@ -271,6 +311,7 @@ class Player2(Player):
             if self.hurt:
                 self.image = transform.rotate(self.image, 10)
             self.show_HP(game)
+            self.show_atoms_n()
             self.face2face(game.player)
             game.screen.blit(self.image_hands, (int(self.h_x), int(self.h_y)))
         else:
@@ -280,6 +321,46 @@ class Player2(Player):
 
         game.screen.blit(self.image, (int(self.x), int(self.y)))
 
+
+
+class Atom:
+    def __init__(self, x, y, vx, vy=0):
+        """ Constructor of Atom class """
+        self.image = pygame.image.load("./images/player/atom2.gif").convert()
+        self.x, self.y, self.vx, self.vy = \
+         x, y, vx, vy
+        self.power = 40
+        self.rect = Rect(0,0, 10,10)
+        self.COLLIDE = False
+
+    def collide(self):
+        """  When two atoms collide """
+        for p in game.atoms:
+            if self.rect.colliderect(p.rect):
+                if self != p and not self.COLLIDE:
+                    self.vx *= 1.5
+                    self.power += 5
+                    self.vy = random.gauss(0, 1) * 70
+                    self.COLLIDE = True
+            else:
+                self.COLLIDE = False
+
+    def update(self, game):
+        """ Update the atom's options """
+        self.rect = self.image.get_rect(center = (self.x, self.y))
+        self.x += self.vx * game.delta
+        self.y += self.vy * game.delta
+        self.collide()
+        # Delete atom if it out of the gamescreen
+        if self.x < 0 \
+         or self.y <= 0 \
+         or self.x > game.width - self.rect.width \
+         or self.y >= game.height:
+            game.atoms.remove(self)
+
+    def render(self, game):
+        """ render the atom """
+        game.screen.blit(self.image, self.rect)
 
 
 class Menu:
@@ -339,7 +420,12 @@ class Menu:
             if game.tool == 'pause':
                 if self.y == 120: game.tool = 'main'
                 if self.y == 205:
+                    for i in game.atoms:
+                        for p in game.atoms:
+                            game.atoms.remove(p)
                     game.default_state()
+                    for p in game.atoms:
+                        game.atoms.remove(p)
                     game.tool = 'main'
                 if self.y == 290: self.image = self.develop
                 if self.y == 380: game.exit()
@@ -376,27 +462,23 @@ class Game:
         # create main display - 1040x400 window
         self.size = self.width, self.height = 1040, 500
         # try to use hardware acceleration
-        self.screen = pygame.display.set_mode(self.size)#, pygame.HWSURFACE)
+        self.screen = pygame.display.set_mode(self.size, pygame.HWSURFACE)
         # set window caption
         pygame.display.set_caption('Fight game')
         # get object to help track time
         self.clock = pygame.time.Clock()
         self.tool = 'start'
-        self.T0 = 31
+        self.T0 = 900
         self.T = self.T0
-
+        # initialize all objects
         self.menu = Menu(self)
         self.platform = Platform(x = 300, y = 350)
-        self.entities = pygame.sprite.Group() # Все объекты
         self.platforms = [] # то, во что мы будем врезаться или опираться
-        self.players = pygame.sprite.Group() # игроки
+        self.atoms = [] # атомы в игрре
         self.player2 = Player2(self)
         self.player = Player(self)
-        self.players.add(self.player, self.player2)
-        self.entities.add(self.player, self.platform)
         self.platforms.append(self.platform)
 
-        
     def event_handler(self, event):
         """ Handling one pygame event """
         if event.type == pygame.QUIT:
@@ -419,12 +501,17 @@ class Game:
                 self.player.HP = 0
 
     def default_state(self):
-        """ set the first position and HP of players"""
+        """ set the default options of the entities """
+        for p in self.atoms:
+            for i in self.atoms:
+                self.atoms.remove(i)
+        # set the first position and HP of players
         self.player2.x, self.player2.y, self.player2.vy = \
             800, 100, 0
         self.player.x, self.player.y, self.player.vy = \
             100, 100, 0
         self.player2.HP, self.player.HP = 400, 400
+        self.player.shoot_n, self.player2.shoot_n = 10, 10
         self.player2.hurt, self.player.hurt = False, False
         self.T = self.T0
 
@@ -437,6 +524,8 @@ class Game:
         if self.tool == 'main':
             self.player.update(self)
             self.player2.update(self)
+            for i in self.atoms:
+                i.update(game)
         else:
             self.menu.update(self)
             self.menu.button_press(self)
@@ -451,6 +540,8 @@ class Game:
             self.platform.render(self)
             self.player.render(self)
             self.player2.render(self)
+            for i in self.atoms:
+                i.render(game)
             self.define_winner()
         else:
             self.screen.blit(self.menu.image, (1,1))
