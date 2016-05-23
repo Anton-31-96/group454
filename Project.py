@@ -11,6 +11,7 @@ from pygame import*
 """ We will use these colours """
 red = (200,10,10)
 gray = (120,126,135)
+green = (10,200,10)
 
 class Platform(sprite.Sprite):
     def __init__(self, x, y):
@@ -37,6 +38,7 @@ class Player(sprite.Sprite):
         self.HP, self.power = 400, 20
         self.On_ground = False
         self.hurt = False
+        self.hit = False
 
         """ Control keys """
         self.UP = K_UP
@@ -46,10 +48,13 @@ class Player(sprite.Sprite):
         self.HIT = K_RSHIFT
 
         """ Load images """
-        self.image1 = pygame.image.load("./images/player/man_r.gif").convert()
-        self.image2 = pygame.image.load("./images/player/hit_r.gif").convert()
-        self.image3 = pygame.image.load("./images/player/man_r_j.gif").convert()
-        self.width, self.height = 100, 100
+        self.image_hands_down = pygame.image.load("./images/player/hands_down.gif").convert()
+        self.image_hands_up = pygame.image.load("./images/player/hands_up.gif").convert()
+        self.image_hands_hit = pygame.image.load("./images/player/hands_hit.gif").convert()
+        self.image0 = pygame.image.load("./images/player/man_r.gif").convert()
+        self.image1 = pygame.image.load("./images/player/man_r_stand.gif").convert()
+        self.anim = 0
+        self.width, self.height = 60, 100
         self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
         # self.head = Rect(int self.x)
 
@@ -59,9 +64,8 @@ class Player(sprite.Sprite):
             if sprite.collide_rect(self, p):
                 # Спуск с платформы
                 if game.pressed[self.DOWN]:
-                    # and (self.y < game.height - self.height):
                     self.On_ground = False
-                    # Прыжок на платформу"""
+                # Прыжок на платформу
                 elif vy > 0 and (self.y < p.y - self.height + 30):
                     self.y = p.y - self.height + 1
                     self.On_ground = True
@@ -71,15 +75,28 @@ class Player(sprite.Sprite):
 
     def collide_enemy(self, enemy):
         """" Обработка столкновений с другим игроком """
-        if sprite.collide_rect(self, enemy):
-            if enemy.image == enemy.image2 and self.hurt == False:
+        if self.rect.colliderect(enemy.image_hands.get_rect(center=enemy.rect.center)):
+            """ When enemy is hitting you """
+            if enemy.hit and not self.hurt:
                 self.hurt = True
                 if self.HP >= self.power:
                     self.HP -= self.power
                 else:
                     self.HP = 0
-            elif enemy.image != enemy.image2:
+            elif not enemy.hit:
                 self.hurt = False
+            #""" When enemy is jumping on you """
+            if self.rect.top <= enemy.rect.bottom \
+             and self.rect.top >= enemy.rect.bottom - 10 \
+             and enemy.vy > 0:
+                self.HP -= enemy.power
+                enemy.vy = - enemy.vy
+                enemy.y -= 12
+                self.hurt = True
+            #else:
+                #self.hurt = False
+        else:
+            self.hurt = False
 
     def be_in(self, game):
         """ Do not let Player get out of the Game window """
@@ -103,10 +120,14 @@ class Player(sprite.Sprite):
             if self.On_ground:
                 self.vy -= 800
                 self.On_ground = False
+        if game.pressed[self.HIT]:
+            self.hit = True
 
     def update(self, game):
         """ Update Player state """
-        self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
+        #self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
+        self.hit = False
+        self.rect = self.image.get_rect(topleft = (self.x, self.y))
         self.vx = 0
         self.collide_enemy(game.player2)
         self.control()
@@ -114,14 +135,14 @@ class Player(sprite.Sprite):
         """ Player's move """
         self.x +=self.vx
         self.collide_platform(game, self.vx, 0)
-        if self.On_ground == False:
+        if not self.On_ground:
             self.vy += game.delta * 1500 
             self.y += self.vy * game.delta
             self.collide_platform(game, 0, self.vy)
 
         self.be_in(game)
             
-        if self.On_ground == True:
+        if self.On_ground:
             self.vy = 0
 
     def show_HP(self, game):
@@ -130,27 +151,54 @@ class Player(sprite.Sprite):
         self.rect_HP = Rect(10, 10, self.HP + 10, 20)
         draw.rect(game.screen, self.color_HP, self.rect_HP)
 
+    def animation(self):
+        if self.anim > 0.5:
+            self.image = self.image0
+        elif self.anim <= 0.5:
+            self.image = self.image1
+        if self.anim >= 1:
+            self.anim = 0
+        return self.anim + 0.1
+
+    def face2face(self, player):
+        if self.x > player.x:
+            self.image = transform.flip(self.image, True, False)
+            if self.image_hands == self.image_hands_hit:
+                self.h_x, self.h_y = self.x - 35, self.y
+            self.image_hands = transform.flip(self.image_hands, True, False)
+
     def render(self, game):
         """ Draw Player on the Game window """
         if self.HP > 0:
-            self.image = self.image3
-            if self.On_ground == True:
+            self.image = self.image0
+            self.image_hands = self.image_hands_up
+            self.h_x, self.h_y = self.x-20, self.y
+            if self.On_ground:
                 self.image = self.image1
-            if game.pressed[self.HIT]:
-                self.image = self.image2
+                self.image_hands = self.image_hands_down
+                self.h_x, self.h_y = self.x, self.y
+                if self.vx != 0:
+                    self.anim = self.animation()
+            if self.hit:
+                self.image_hands = self.image_hands_hit
+                self.h_x, self.h_y = self.x - 20, self.y
+            if self.hurt:
+                self.image = transform.rotate(self.image, 10)
             self.show_HP(game)
+            self.face2face(game.player2)
+            game.screen.blit(self.image_hands, (int(self.h_x), int(self.h_y)))
         else:
-            self.font = pygame.font.Font (None, 25)
+            self.font = pygame.font.Font(None, 25)
             self.image = self.font.render("second player wins", True, red)
             self.x, self.y = 470, 50
+
         game.screen.blit(self.image, (int(self.x),int(self.y)))
 
-        #game.entities.draw(game.screen)
 
 
 class Player2(Player):
 
-    def __init__(self, game, x=600, y=100, vy=0, vx=0,):
+    def __init__(self, game, x=800, y=100, vy=0, vx=0,):
         """ Constructor of Player class """
         sprite.Sprite.__init__(self)
         self.x, self.y, self.vy, self.vx = \
@@ -158,6 +206,7 @@ class Player2(Player):
         self.HP, self.power = 400, 20
         self.On_ground = False
         self.hurt = False
+        self.hit = False
 
         """ Control keys """
         self.UP = K_w
@@ -167,15 +216,20 @@ class Player2(Player):
         self.HIT = K_SPACE
 
         """ Load images """
-        self.image1 = pygame.image.load("./images/player/man_l2.gif").convert()
-        self.image2 = pygame.image.load("./images/player/hit_l2.gif").convert()
-        self.image3 = pygame.image.load("./images/player/man_l_j2.gif").convert()
-        self.width, self.height = 100, 100
+        self.image_hands_down = pygame.image.load("./images/player/hands_down.gif").convert()
+        self.image_hands_up = pygame.image.load("./images/player/hands_up.gif").convert()
+        self.image_hands_hit = pygame.image.load("./images/player/hands_hit.gif").convert()
+        self.image0 = pygame.image.load("./images/player/man_r2.gif").convert()
+        self.image1 = pygame.image.load("./images/player/man_r2_stand.gif").convert()
+        self.anim = 0
+        self.width, self.height = 60, 100
         self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
 
     def update(self, game):
         """ Update Player state """
-        self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
+        #self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
+        self.hit = False
+        self.rect = self.image.get_rect(topleft = (self.x, self.y))
         self.vx = 0
         self.collide_enemy(game.player)
         self.control()
@@ -183,36 +237,49 @@ class Player2(Player):
         """ Player's move """
         self.x +=self.vx
         self.collide_platform(game, self.vx, 0)
-        if self.On_ground == False:
+        if not self.On_ground:
             self.vy += game.delta * 1500
             self.y += self.vy * game.delta
             self.collide_platform(game, 0, self.vy)
 
         self.be_in(game)
 
-        if self.On_ground == True:
+        if self.On_ground:
             self.vy = 0
 
     def show_HP(self, game):
         """ define and draw HP on the Game screen """
         self.color_HP = red
-        self.rect_HP = Rect((game.width - self.HP - 10), 10, game.width - 10 , 20)
+        self.rect_HP = Rect((game.width - self.HP - 10), 10, game.width - 10, 20)
         draw.rect(game.screen, self.color_HP, self.rect_HP)
 
     def render(self, game):
         """ Draw Player on the Game window """
         if self.HP > 0:
-            self.image = self.image3
-            if self.On_ground == True:
+            self.image = self.image0
+            self.image_hands = self.image_hands_up
+            self.h_x, self.h_y = self.x - 20, self.y
+            if self.On_ground:
                 self.image = self.image1
-            if game.pressed[self.HIT]:
-                self.image = self.image2
+                self.image_hands = self.image_hands_down
+                self.h_x, self.h_y = self.x, self.y
+                if self.vx != 0:
+                    self.anim = self.animation()
+            if self.hit:
+                self.image_hands = self.image_hands_hit
+                self.h_x, self.h_y = self.x - 20, self.y
+            if self.hurt:
+                self.image = transform.rotate(self.image, 10)
             self.show_HP(game)
+            self.face2face(game.player)
+            game.screen.blit(self.image_hands, (int(self.h_x), int(self.h_y)))
         else:
             self.font = pygame.font.Font(None, 25)
             self.image = self.font.render("first player wins", True, red)
             self.x, self.y = 470, 50
+
         game.screen.blit(self.image, (int(self.x), int(self.y)))
+
 
 
 class Menu:
@@ -272,10 +339,8 @@ class Menu:
             if game.tool == 'pause':
                 if self.y == 120: game.tool = 'main'
                 if self.y == 205:
-                    game = Game()
-                    game.execute()
-                    game.exit()
-#                    game.tool = 'main'
+                    game.default_state()
+                    game.tool = 'main'
                 if self.y == 290: self.image = self.develop
                 if self.y == 380: game.exit()
                 # back buttom
@@ -301,6 +366,8 @@ class Game:
         self.image = self.font.render(str(int(time)), True, (120, 0, 0))
         self.T -= self.delta
         game.screen.blit(self.image, (500, 10))
+        if self.player.HP <= 0 or self.player2.HP <= 0:
+            self.T = -1
 
     def __init__(self):
         """ Constructor of the Game """
@@ -309,13 +376,14 @@ class Game:
         # create main display - 1040x400 window
         self.size = self.width, self.height = 1040, 500
         # try to use hardware acceleration
-        self.screen = pygame.display.set_mode(self.size, pygame.HWSURFACE)
+        self.screen = pygame.display.set_mode(self.size)#, pygame.HWSURFACE)
         # set window caption
         pygame.display.set_caption('Fight game')
         # get object to help track time
         self.clock = pygame.time.Clock()
         self.tool = 'start'
-        self.T = 16
+        self.T0 = 31
+        self.T = self.T0
 
         self.menu = Menu(self)
         self.platform = Platform(x = 300, y = 350)
@@ -349,6 +417,16 @@ class Game:
                 self.player2.HP = 0
             elif self.player.HP < self.player2.HP:
                 self.player.HP = 0
+
+    def default_state(self):
+        """ set the first position and HP of players"""
+        self.player2.x, self.player2.y, self.player2.vy = \
+            800, 100, 0
+        self.player.x, self.player.y, self.player.vy = \
+            100, 100, 0
+        self.player2.HP, self.player.HP = 400, 400
+        self.player2.hurt, self.player.hurt = False, False
+        self.T = self.T0
 
     def move(self):
         """ Here game objects update their positions """
@@ -392,8 +470,8 @@ class Game:
                 self.event_handler(event)
             self.move()
             self.render()
-        pygame.quit()
 
 if __name__ == "__main__":
     game = Game()
     game.execute()
+    pygame.quit()
