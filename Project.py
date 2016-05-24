@@ -14,6 +14,8 @@ red = (200,10,10)
 gray = (120,126,135)
 green = (10,200,10)
 black = (0,0,0)
+white = (250,250,250)
+lemon_ch = (250,250,200)
 
 class Platform(sprite.Sprite):
     def __init__(self, x, y):
@@ -363,82 +365,181 @@ class Atom:
         game.screen.blit(self.image, self.rect)
 
 
+
 class Menu:
+    def buttons_rect(self, list1, list2, x = 210, y = 130, d_y = 60):
+        """ Create list of rectangles for buttons """
+        self.image = self.clear_image.convert()
+        for b in list1:
+            for b in list1:
+                self.image.blit(self.font.render(b, True, white), (x, y))
+                list2.append(self.font.render(b, True, white).get_rect(topleft=(x, y)))
+                y += d_y
+
     def __init__(self, game):
         """ Constructor of Menu class """
-        self.main_image = pygame.image.load("./images/menu/main_menu.gif").convert()
-        self.develop = pygame.image.load("./images/menu/develop.gif").convert()
-        self.pause = pygame.image.load("./images/menu/pause.gif").convert()
-        
-        self.color = (70, 250, 50)
-        self.size = 15
-        self.x, self.y = 360, 120
+        self.clear_image = pygame.image.load("./images/menu/main1.gif")
+        self.font = pygame.font.Font(None, 55)
+        self.m_pres = False
+        # Buttons for start menu
+        self.b_list1 = ["Одиночная игра", "Мультиплеер", "Настройки", "Выход"]
+        self.b_list1_rects = []
+        self.buttons_rect(self.b_list1,self.b_list1_rects)
+        # Buttons for pause menu
+        self.b_list2 = ["Продолжить", "Новая игра", "Настройки", "Выход"]
+        self.b_list2_rects = []
+        self.buttons_rect(self.b_list2, self.b_list2_rects)
+        self.b_list3 = ["Время матча:", "30 секунд", "60 секунд", "2 минуты"]
+        self.b_list3_rects = []
+        self.buttons_rect(self.b_list3, self.b_list3_rects)
 
-        if game.tool == 'start':
-            self.image = self.main_image
-        else:
-            self.image = self.pause
+    def render_button_list(self, list1, list2):
+        """ Renders the list of buttons on the menu page """
+        x, y = 210, 130
+        for b in list1:
+            self.image.blit(self.font.render(b, True, white), (x, y))
+            y += 60
 
     def update(self, game):
-        if self.image != self.develop:
-            if game.tool == 'start':
-                self.image = self.main_image
-            elif game.tool == 'pause':
-                self.image = self.pause
-            
-        # show choice
-        # 1 buttom (385,85), (700,150)
-        if game.m_pos[0] > 385 and game.m_pos[1] > 85\
-           and game.m_pos[0] < 700 and game.m_pos[1] < 150:
-            self.x, self.y = 360, 120
-        # 2 buttom (385,170),(700,230)
-        if game.m_pos[0] > 385 and game.m_pos[1] > 170\
-           and game.m_pos[0] < 700 and game.m_pos[1] < 230:
-            self.x, self.y = 360, 205
-        # 3 buttom (385,260),(700,320)
-        if game.m_pos[0] > 385 and game.m_pos[1] > 260\
-           and game.m_pos[0] < 700 and game.m_pos[1] < 320:
-            self.x, self.y = 360, 290
-        # 4 buttom (385,345),(700,400)
-        if game.m_pos[0] > 385 and game.m_pos[1] > 345\
-           and game.m_pos[0] < 700 and game.m_pos[1] < 400:
-            self.x, self.y = 360, 380
-        self.pos = self.x, self.y
-    
-    def button_press(self, game):
-        """ when press buttom """
-        if game.m_pressed == (1, 0, 0):
-            if game.tool == 'start':
-                if self.y == 120: self.image = self.develop
-                if self.y == 205: game.tool = 'main'
-                if self.y == 290: self.image = self.develop
-                if self.y == 380: game.exit()
-                # back buttom
-                if game.m_pos[0] > 20 and game.m_pos[1] > 20\
-                   and game.m_pos[0] < 160 and game.m_pos[1] < 80:
-                    self.image = self.main_image
-            if game.tool == 'pause':
-                if self.y == 120: game.tool = 'main'
-                if self.y == 205:
-                    for i in game.atoms:
-                        for p in game.atoms:
-                            game.atoms.remove(p)
-                    game.default_state()
-                    for p in game.atoms:
-                        game.atoms.remove(p)
-                    game.tool = 'main'
-                if self.y == 290: self.image = self.develop
-                if self.y == 380: game.exit()
-                # back buttom
-                if game.m_pos[0] > 20 and game.m_pos[1] > 20\
-                   and game.m_pos[0] < 160 and game.m_pos[1] < 80:
-                    self.image = self.pause
+        """ Update the menu state """
+        self.case = 0
 
-    def button_render(self, game):
-        draw.circle(game.screen, self.color, self.pos, self.size)
+        # Handling the events in the start menu
+        if game.tool == 'start':
+            self.image = self.clear_image.convert()
+            self.render_button_list(self.b_list1,self.b_list1_rects)
+            # If mouse cursor on the button 1
+            if self.b_list1_rects[0].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list1[0], True, lemon_ch)), self.b_list1_rects[0].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 1
+            # If mouse cursor on the button 2
+            if self.b_list1_rects[1].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list1[1], True, lemon_ch)), self.b_list1_rects[1].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 2
+            # If mouse cursor on the button 3
+            if self.b_list1_rects[2].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list1[2], True, lemon_ch)), self.b_list1_rects[2].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 3
+            # If mouse cursor on the button 4
+            if self.b_list1_rects[3].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list1[3], True, lemon_ch)), self.b_list1_rects[3].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 4
+
+        # Handling the events in the pause menu
+        if game.tool == 'pause':
+            self.image = self.clear_image.convert()
+            self.render_button_list(self.b_list2, self.b_list2_rects)
+            if self.b_list2_rects[0].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list2[0], True, lemon_ch)), self.b_list2_rects[0].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 1
+            # If mouse cursor on the button 2
+            if self.b_list2_rects[1].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list2[1], True, lemon_ch)), self.b_list2_rects[1].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 2
+            # If mouse cursor on the button 3
+            if self.b_list2_rects[2].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list2[2], True, lemon_ch)), self.b_list2_rects[2].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 3
+            # If mouse cursor on the button 4
+            if self.b_list2_rects[3].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list2[3], True, lemon_ch)), self.b_list2_rects[3].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 4
+
+        # Handling the events in the pause menu
+        if game.tool == 'option':
+            self.image = self.clear_image.convert()
+            # Create button BACK
+            self.b_back = self.font.render("Назад", True, white)
+            self.b_back_rect = self.b_back.get_rect(topleft = (20, 20))
+            self.image.blit(self.b_back, (20, 20))
+            self.render_button_list(self.b_list3, self.b_list3_rects)
+
+            # If mouse cursor on the button BACK
+            if self.b_back_rect.collidepoint(game.m_pos):
+                self.image.blit((self.font.render("Назад", True, lemon_ch)),
+                                self.b_back_rect.topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 1
+            # If mouse cursor on the button 2
+            if self.b_list3_rects[1].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list3[1], True, lemon_ch)),
+                                self.b_list3_rects[1].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 2
+            # If mouse cursor on the button 3
+            if self.b_list3_rects[2].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list3[2], True, lemon_ch)),
+                                self.b_list3_rects[2].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 3
+            # If mouse cursor on the button 4
+            if self.b_list3_rects[3].collidepoint(game.m_pos):
+                self.image.blit((self.font.render(self.b_list3[3], True, lemon_ch)),
+                                self.b_list3_rects[3].topleft)
+                if game.m_pressed == (1, 0, 0):
+                    self.case = 4
+
+    def button_pres(self):
+        """ Handle the user's choice when he press button """
+        execute = True
+
+        if game.tool == 'start' and execute:
+            if self.case == 1:
+                # This function doesn't work properly
+                game.tool = 'main'
+                game.player2 = Player2(game)
+            elif self.case == 2:
+                # Start the Game
+                game.player2 = Player2(game)
+                game.tool = 'main'
+                game.start = True
+            elif self.case == 3:
+                # Options page
+                game.tool = 'option'
+            elif self.case == 4:
+                game.exit()
+            execute = False
+
+        if game.tool == 'pause' and execute:
+            if self.case == 1:
+                # return in the game
+                game.tool = 'main'
+            elif self.case == 2:
+                # start the new game
+                game.default_state()
+                game.tool = 'start'
+                game.start = False
+            elif self.case == 3:
+                # Options page
+                game.tool = 'option'
+            elif self.case == 4:
+                game.exit()
+            execute = False
+
+        if game.tool == 'option' and execute:
+            if self.case == 1:
+                if game.start:
+                    game.tool = 'pause'
+                else:
+                    game.tool = 'start'
+            elif self.case == 2:
+                game.T = 31
+            elif self.case == 3:
+                game.T = 61
+            elif self.case == 4:
+                game.T = 121
+            execute = False
 
 
- 
+
 class Game:
     def tick(self):
         """ Return time in seconds since previous call
@@ -458,16 +559,18 @@ class Game:
     def __init__(self):
         """ Constructor of the Game """
         self._running = True
+        self.tool = 'start'
+        self.start = False
+        #self.m_pressed = (0,0,0)
         pygame.font.init()
         # create main display - 1040x400 window
         self.size = self.width, self.height = 1040, 500
         # try to use hardware acceleration
         self.screen = pygame.display.set_mode(self.size, pygame.HWSURFACE)
         # set window caption
-        pygame.display.set_caption('Fight game')
+        pygame.display.set_caption('Sciense WAR')
         # get object to help track time
         self.clock = pygame.time.Clock()
-        self.tool = 'start'
         self.T0 = 900
         self.T = self.T0
         # initialize all objects
@@ -475,7 +578,7 @@ class Game:
         self.platform = Platform(x = 300, y = 350)
         self.platforms = [] # то, во что мы будем врезаться или опираться
         self.atoms = [] # атомы в игрре
-        self.player2 = Player2(self)
+        #self.player2 = Player2(self)
         self.player = Player(self)
         self.platforms.append(self.platform)
 
@@ -491,6 +594,10 @@ class Game:
                     self.tool = 'pause'
                 elif self.tool == 'pause':
                     self.tool = 'main'
+        if event.type == MOUSEBUTTONUP:
+            self.m_pressed = (1,0,0)
+        else:
+            self.m_pressed = (0, 0, 0)
 
     def define_winner(self):
         """ define winner when time is over """
@@ -518,18 +625,18 @@ class Game:
     def move(self):
         """ Here game objects update their positions """
         self.pressed = pygame.key.get_pressed()
-        self.m_pressed = pygame.mouse.get_pressed()
         self.m_pos = mouse.get_pos()
         self.tick()
         if self.tool == 'main':
+            # update the world
             self.player.update(self)
             self.player2.update(self)
             for i in self.atoms:
                 i.update(game)
         else:
+            # update the menu
             self.menu.update(self)
-            self.menu.button_press(self)
-            
+            self.menu.button_pres()
 
     def render(self):
         """ Render the scene """
@@ -544,9 +651,9 @@ class Game:
                 i.render(game)
             self.define_winner()
         else:
-            self.screen.blit(self.menu.image, (1,1))
-            if self.menu.image != self.menu.develop:
-                self.menu.button_render(self)
+            self.screen.blit(self.menu.image, (0,0))
+            #if self.menu.image != self.menu.develop:
+            #    self.menu.button_render(self)
         pygame.display.flip()
 
     def exit(self):
@@ -560,6 +667,7 @@ class Game:
             for event in pygame.event.get():
                 self.event_handler(event)
             self.move()
+            self.m_pressed = (0,0,0)
             self.render()
 
 if __name__ == "__main__":
