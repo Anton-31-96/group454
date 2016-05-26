@@ -46,12 +46,12 @@ class Player(sprite.Sprite):
         self.shoot = True
 
         """ Control keys """
-        self.UP = K_UP
-        self.DOWN = K_DOWN
-        self.RIGHT = K_RIGHT
-        self.LEFT = K_LEFT
-        self.HIT = K_PERIOD
-        self.SHOOT = K_COMMA
+        self.UP = K_w
+        self.DOWN = K_s
+        self.RIGHT = K_d
+        self.LEFT = K_a
+        self.HIT = K_g
+        self.SHOOT = K_h
 
         """ Load images """
         self.image_hands_down = pygame.image.load("./images/player/hands_down.gif").convert()
@@ -90,7 +90,7 @@ class Player(sprite.Sprite):
     def collide_enemy(self, enemy):
         """" Обработка столкновений с другим игроком """
         if self.rect.colliderect(enemy.image_hands.get_rect(center=enemy.rect.center)):
-            """ When enemy is hitting you """
+            # When enemy is hitting you
             if enemy.hit and not self.hurt:
                 self.hurt = True
                 if self.HP >= self.power:
@@ -99,7 +99,7 @@ class Player(sprite.Sprite):
                     self.HP = 0
             elif not enemy.hit:
                 self.hurt = False
-            #""" When enemy is jumping on you """
+            # When enemy is jumping on you
             if self.rect.top <= enemy.rect.bottom \
              and self.rect.top >= enemy.rect.bottom - 10 \
              and enemy.vy > 0:
@@ -138,24 +138,30 @@ class Player(sprite.Sprite):
             if self.shoot and self.shoot_n > 0:
                 self.shoot_n -= 1
                 if self.x > enemy.x:
-                    game.atoms.append(Atom(self.x - 20, self.rect.centery, -250))
+                    if self.vx < 0:
+                        game.atoms.append(Atom(self.x - 50, self.rect.centery, -650))
+                    else:
+                        game.atoms.append(Atom(self.x - 20, self.rect.centery, -650))
                 else:
-                    game.atoms.append(Atom(self.x + self.width + 20, self.rect.centery, 250))
+                    if self.vx > 0:
+                        game.atoms.append(Atom(self.x + self.width + 50, self.rect.centery, 650))
+                    else:
+                        game.atoms.append(Atom(self.x + self.width + 20, self.rect.centery, 650))
             self.shoot = False
         if not game.pressed[self.SHOOT]:
             self.shoot = True
 
     def update(self, game):
         """ Update Player state """
-        #self.rect = Rect(int(self.x), int(self.y), self.width, self.height)
         self.hit = False
         self.rect = self.image.get_rect(topleft = (self.x, self.y))
         self.vx = 0
-        self.collide_enemy(game.player2)
+        if game.mode == 'multi':
+            self.collide_enemy(game.player2)
         self.collide_atom(game)
         self.control(game.player2)
 
-        """ Player's move """
+        # Player's move
         self.x += self.vx
         self.collide_platform(game, self.vx, 0)
         if not self.On_ground:
@@ -164,7 +170,6 @@ class Player(sprite.Sprite):
             self.collide_platform(game, 0, self.vy)
 
         self.be_in(game)
-            
         if self.On_ground:
             self.vy = 0
 
@@ -183,6 +188,7 @@ class Player(sprite.Sprite):
         game.screen.blit(self.at,(55, 40))
 
     def animation(self):
+        """ Simulate the walking """
         if self.anim > 0.5:
             self.image = self.image0
         elif self.anim <= 0.5:
@@ -192,11 +198,20 @@ class Player(sprite.Sprite):
         return self.anim + 0.1
 
     def face2face(self, player):
-        if self.x > player.x:
-            self.image = transform.flip(self.image, True, False)
-            if self.image_hands == self.image_hands_hit:
-                self.h_x, self.h_y = self.x - 35, self.y
-            self.image_hands = transform.flip(self.image_hands, True, False)
+        """ players will watch on each other """
+        if game.mode == 'multi':
+            if self.x > player.x:
+                self.image = transform.flip(self.image, True, False)
+                if self.image_hands == self.image_hands_hit:
+                    self.h_x, self.h_y = self.x - 35, self.y
+                self.image_hands = transform.flip(self.image_hands, True, False)
+
+        elif game.mode == 'single':
+            if self.vx < 0:
+                self.image = transform.flip(self.image, True, False)
+                if self.image_hands == self.image_hands_hit:
+                    self.h_x, self.h_y = self.x - 35, self.y
+                self.image_hands = transform.flip(self.image_hands, True, False)
 
     def render(self, game):
         """ Draw Player on the Game window """
@@ -242,12 +257,12 @@ class Player2(Player):
         self.shoot = True
 
         """ Control keys """
-        self.UP = K_w
-        self.DOWN = K_s
-        self.RIGHT = K_d
-        self.LEFT = K_a
-        self.HIT = K_g
-        self.SHOOT = K_h
+        self.UP = K_UP
+        self.DOWN = K_DOWN
+        self.RIGHT = K_RIGHT
+        self.LEFT = K_LEFT
+        self.HIT = K_PERIOD
+        self.SHOOT = K_COMMA
 
         """ Load images """
         self.image_hands_down = pygame.image.load("./images/player/hands_down.gif").convert()
@@ -325,13 +340,263 @@ class Player2(Player):
 
 
 
+class Single_Play():
+
+    def __init__(self, game):
+        """ Constructor of Single Game """
+        self.font = pygame.font.Font(None, 55)
+        self.stage = 0
+        self.time = 0
+        self.t = 0
+        self.x = game.width/2
+        self.text = self.font.render(" ", True, black)
+        self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        self.image1 = self.font.render(" ", True, black)
+        self.rect1 = self.image1.get_rect(center=(game.width / 2, game.height / 5))
+        self.image2 = self.font.render(" ", True, black)
+        self.rect2 = self.image2.get_rect(center=(game.width / 2, game.height / 5))
+        game.player.shoot_n = 0
+        self.goal = 0
+
+    def stage_0(self):
+        """ Начальный текст """
+        if self.time > 3:
+            self.text = self.font.render("Тебе что, не с кем поиграть?", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 7:
+            self.text = self.font.render("Иди в мультиплеер, там интереснее!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 11:
+            self.text = self.font.render("Как тут выиграть?!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 13:
+            self.text = self.font.render("Очень просто!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 14.5:
+            self.text = self.font.render("Поздравляю! Ты победил!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 19:
+            self.text = self.font.render("Слишком просто?", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 21.5:
+            self.text = self.font.render("Слушай, мне некогда с тобой возиться", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 24:
+            self.text = self.font.render("Уходи!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 26:
+            self.text = self.font.render("Дверь там", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 27.5:
+            self.image1 = pygame.image.load("./images/world/door.gif").convert()
+            self.text = self.font.render("", True, black)
+            if game.player.x >= game.width / 2:
+                self.rect1 = self.image1.get_rect(bottomleft=(30, game.height))
+            else:
+                self.rect1 = self.image1.get_rect(bottomright=(game.width - 30, game.height))
+            self.stage += 1
+            self.time = 0
+
+    def stage_1(self):
+        """ Игра с дверью """
+        if game.player.x >= game.width/2 + 200:
+            self.rect1 = self.image1.get_rect(bottomleft=(30, game.height))
+        if game.player.x <= game.width/2 - 200:
+            self.rect1 = self.image1.get_rect(bottomright=(game.width - 30, game.height))
+        if self.time > 3.5:
+            self.text = self.font.render("Сложнааа!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 5.5:
+            self.text = self.font.render("Ладно", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+            self.image1 = self.font.render(" ", True, black)
+            self.stage += 1
+            self.time = 0
+
+    def stage_2(self):
+        """ Игра с кнопкой """
+        if  1 <self.time < 2.5:
+            self.text = self.font.render("Если хочешь выиграть", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if 2.5 < self.time < 2.6:
+            self.t = 0
+            self.text = self.font.render("Встань на красную кнопку", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+            self.image1 = Surface((60, 15))
+            self.image1.fill(green)
+            self.image2 = Surface((60,15))
+            self.image2.fill(red)
+            if game.player.x < game.width/2:
+                self.rect1 = self.image1.get_rect(bottomright=(game.width - 30, game.height))
+                self.rect2 = self.image2.get_rect(bottomright=(game.width - 100, game.height))
+            else:
+                self.rect1 = self.image1.get_rect(bottomleft=(30, game.height))
+                self.rect2 = self.image2.get_rect(bottomleft=(100, game.height))
+        if self.time > 2.1:
+            if (self.rect2.centerx - 30) < game.player.rect.centerx < (self.rect2.centerx + 30):
+                self.t += game.delta
+                if self.t > 0.1:
+                    self.image1.fill(red)
+                    self.image2.fill(green)
+                    game.player.RIGHT, game.player.LEFT = 1, 1
+                    self.text = self.font.render("Ну и что ты сделал?", True, black)
+                    self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+                    self.time = 0
+                    self.stage += 1
+                    self.t = 0
+
+    def stage_3(self):
+        """ Игра с кнопкой. Вторая попытка """
+        if self.time > 2:
+            self.text = self.font.render("На какой кнопке ты стоишь?", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 4:
+            self.text = self.font.render("Давай попробуем еще раз", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if 5 < self.time < 5.05:
+            game.player.RIGHT, game.player.LEFT = K_d, K_a
+            if game.player.x > game.width/2:
+                game.player.x = 100
+            else:
+                game.player.x = game.width - 100
+            self.image1.fill(green)
+            self.image2.fill(red)
+
+        if self.time > 6:
+            self.text = self.font.render("Встань на КРАСНУЮ кнопку", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 6.1 and self.rect2.colliderect(game.player.rect):
+            self.t += game.delta
+            self.text = self.font.render("Вот теперь молодец!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.t > 3:
+            self.t = 0
+            self.time = 0
+            self.stage += 1
+            self.image1 = self.font.render(" ", True, black)
+            self.image2 = self.font.render(" ", True, black)
+
+    def stage_4(self):
+        """ Взять припасы """
+        if self.time > 1.5:
+            self.text = self.font.render("Ты готов к настоящей схватке!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 4:
+            self.text = self.font.render("Видишь те атомы на платформе?", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if 4.1 < self.time < 4.2:
+            self.image1 = pygame.image.load("./images/player/atom2.gif").convert()
+            self.rect1 = self.image1.get_rect(midbottom=game.platform.rect.midtop)
+        if self.time > 6:
+            self.text = self.font.render("Ты должен их взять", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 6 and game.player.rect.colliderect(game.platform.rect) \
+         and game.player.On_ground:
+            self.text = self.font.render("Так держать!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+            self.image1 = self.font.render(" ", True, black)
+            game.player.shoot_n = 5
+            self.time = 0
+            self.stage += 1
+
+    def stage_5(self):
+        """ Драка """
+        if 1.9 < self.time < 2:
+            self.image1 = Surface((62, 100))
+            self.image1.fill((255, 255, 255))
+            self.image1.blit(pygame.image.load("./images/player/man_r2_stand.gif").convert(), (0, 0))
+            self.image1.blit(pygame.image.load("./images/player/hands_down.gif").convert(), (0, 0))
+            self.image1 = transform.flip(self.image1, True, False)
+            self.rect1 = self.image1.get_rect(bottomright=(game.width - 100, game.height))
+            self.x = self.rect1.centerx
+        if self.time > 2.5:
+            self.text = self.font.render("Заметил того рыжего?", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 4:
+            self.text = self.font.render("Запусти в него атомы, нажав 'H'", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        for b in game.atoms:
+            if self.rect1.colliderect(b.rect):
+                game.atoms.remove(b)
+                self.goal += 1
+        if self.goal == 1:
+            self.text = self.font.render("Молодец!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.goal == 2:
+            self.text = self.font.render("И еще один!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.goal == 3:
+            self.text = self.font.render("Ты справился!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+            self.image1 = self.font.render(" ", True, black)
+            self.time = 0
+            self.stage += 1
+        if game.player.shoot_n == 0 and self.t < 1.5:
+            self.text = self.font.render("Кажется, у тебя закончились снаряды!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+            self.t += game.delta
+        if game.player.shoot_n == 0 and self.t >= 1.5:
+            self.text = self.font.render("Ладно, держи еще несколько!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+            self.t += game.delta
+        if game.player.shoot_n == 0 and self.t >= 3:
+            self.text = self.font.render("Ладно, держи еще несколько!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+            self.t = 0
+            game.player.shoot_n = 5
+
+    def stage_6(self):
+        """ Конец игры """
+        if self.time > 1.5:
+            self.text = self.font.render("Невероятно!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 3:
+            self.text = self.font.render("Вот это победа!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 5.5:
+            self.text = self.font.render("А теперь беги в мультиплеер!", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height / 5))
+        if self.time > 7.5:
+            self.font = pygame.font.Font(None, 30)
+            self.text = self.font.render("Developed by Anton Bozhedarov", True, black)
+            self.text_rect = self.text.get_rect(center=(game.width / 2, game.height - self.t))
+            self.t += 1
+        if self.t >= game.height + 50:
+            game.tool = 'start'
+
+    def update(self, game):
+        """ Ececute different stages """
+        self.time += game.delta
+        if self.stage == 0:
+            self.stage_0()
+        elif self.stage == 1:
+            self.stage_1()
+        elif self.stage == 2:
+            self.stage_2()
+        elif self.stage == 3:
+            self.stage_3()
+        elif self.stage == 4:
+            self.stage_4()
+        elif self.stage == 5:
+            self.stage_5()
+        elif self.stage == 6:
+            self.stage_6()
+
+    def render(self, game):
+        """ Draw 'single play' images """
+        game.screen.blit(self.image1, self.rect1.topleft)
+        game.screen.blit(self.image2, self.rect2.topleft)
+        game.screen.blit(self.text, self.text_rect.topleft)
+
+
+
 class Atom:
     def __init__(self, x, y, vx, vy=0):
         """ Constructor of Atom class """
         self.image = pygame.image.load("./images/player/atom2.gif").convert()
         self.x, self.y, self.vx, self.vy = \
          x, y, vx, vy
-        self.power = 40
+        self.power = 20
         self.rect = Rect(0,0, 10,10)
         self.COLLIDE = False
 
@@ -341,8 +606,8 @@ class Atom:
             if self.rect.colliderect(p.rect):
                 if self != p and not self.COLLIDE:
                     self.vx *= 1.5
-                    self.power += 5
-                    self.vy = random.gauss(0, 1) * 70
+                    self.power += 1
+                    self.vy = random.gauss(0, 1) * 110
                     self.COLLIDE = True
             else:
                 self.COLLIDE = False
@@ -495,11 +760,14 @@ class Menu:
             if self.case == 1:
                 # This function doesn't work properly
                 game.tool = 'main'
-                game.player2 = Player2(game)
+                game.player2 = Single_Play(game)
+                game.mode = 'single'
             elif self.case == 2:
                 # Start the Game
                 game.player2 = Player2(game)
+                game.default_state()
                 game.tool = 'main'
+                game.mode = 'multi'
                 game.start = True
             elif self.case == 3:
                 # Options page
@@ -531,11 +799,14 @@ class Menu:
                 else:
                     game.tool = 'start'
             elif self.case == 2:
-                game.T = 31
+               # game.T = 31
+                game.T0 = 31
             elif self.case == 3:
-                game.T = 61
+                #game.T = 61
+                game.T0 = 61
             elif self.case == 4:
-                game.T = 121
+                #game.T = 121
+                game.T0 = 121
             execute = False
 
 
@@ -571,7 +842,7 @@ class Game:
         pygame.display.set_caption('Sciense WAR')
         # get object to help track time
         self.clock = pygame.time.Clock()
-        self.T0 = 900
+        self.T0 = 61
         self.T = self.T0
         # initialize all objects
         self.menu = Menu(self)
@@ -631,6 +902,10 @@ class Game:
             # update the world
             self.player.update(self)
             self.player2.update(self)
+            if self.mode == 'multi':
+                self.define_winner()
+            #elif self.mode == 'single':
+                #self.player2.update()
             for i in self.atoms:
                 i.update(game)
         else:
@@ -642,14 +917,13 @@ class Game:
         """ Render the scene """
         self.screen.fill((255, 255, 255))
         if self.tool == 'main':
-            if self.T >= 0:
+            if self.mode == 'multi' and self.T >= 0:
                 self.timer(self.T)
             self.platform.render(self)
-            self.player.render(self)
             self.player2.render(self)
+            self.player.render(self)
             for i in self.atoms:
                 i.render(game)
-            self.define_winner()
         else:
             self.screen.blit(self.menu.image, (0,0))
             #if self.menu.image != self.menu.develop:
